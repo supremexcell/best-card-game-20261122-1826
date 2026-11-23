@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Duel Kartu Nusantara — Perang Rempah</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #071627; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(1200px 700px at 50% 0%, #12395c 0%, #071627 70%); }
+  .stage { position: relative; width: 1280px; height: 720px; flex: none; background: linear-gradient(180deg, #0b2239 0%, #14532d 55%, #0b3d24 100%); border: 4px solid #f2c94c; border-radius: 18px; overflow: hidden; color: #fdf6e3; transform-origin: center center; box-shadow: 0 0 60px rgba(0,0,0,.6); }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .airow, .playerrow { display: flex; align-items: center; gap: 14px; padding: 10px 18px; }
+  .airow { background: rgba(7,22,39,.55); border-bottom: 2px solid rgba(242,201,76,.5); }
+  .playerrow { background: rgba(7,22,39,.55); border-top: 2px solid rgba(242,201,76,.5); }
+  .avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; flex: none; border: 3px solid #f2c94c; }
+  .ai-avatar { background: #7f1d1d; }
+  .player-avatar { background: #14532d; }
+  .fighter-name { font-size: 22px; font-weight: 900; letter-spacing: 1px; }
+  .fighter-sub { font-size: 13px; color: #a8b8c8; }
+  .aiinfo, .pinfo { width: 250px; flex: none; }
+  .aihp, .php { flex: 1; }
+  .hpbar { position: relative; height: 34px; background: #1c1917; border: 2px solid #f2c94c; border-radius: 17px; overflow: hidden; }
+  .hpfill { height: 100%; transition: width .45s ease; }
+  .hpbar.ai .hpfill { background: linear-gradient(90deg, #dc2626, #ef4444); }
+  .hpbar.player .hpfill { background: linear-gradient(90deg, #16a34a, #22c55e); }
+  .hplabel { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: #fff; text-shadow: 0 2px 3px #000; }
+  .aihand { display: flex; align-items: center; gap: 4px; }
+  .minicard { width: 34px; height: 48px; border-radius: 6px; background: linear-gradient(160deg, #7f1d1d, #450a0a); border: 2px solid #f2c94c; display: flex; align-items: center; justify-content: center; color: #f2c94c; font-size: 16px; }
+  .handcount { font-size: 18px; font-weight: 800; color: #f2c94c; margin-left: 4px; }
+  .scorebox { text-align: right; min-width: 90px; }
+  .scorelabel { font-size: 12px; letter-spacing: 2px; color: #a8b8c8; }
+  .scoreval { font-size: 30px; font-weight: 900; color: #f2c94c; line-height: 1; }
+
+  .intent { margin: 8px auto 0; width: fit-content; max-width: 900px; padding: 8px 22px; background: #7f1d1d; border: 2px solid #fca5a5; border-radius: 999px; font-size: 20px; font-weight: 800; color: #fff; animation: pulse 1s infinite; }
+  .intent.hidden { display: none; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+
+  .table { padding: 10px 18px 4px; }
+  .playedrow { display: flex; align-items: flex-start; justify-content: center; gap: 26px; }
+  .playedslot { width: 250px; text-align: center; }
+  .slotlabel { font-size: 12px; letter-spacing: 2px; color: #d6e4f0; margin-bottom: 6px; font-weight: 700; }
+  .slotcard { min-height: 118px; display: flex; justify-content: center; }
+  .slotempty { padding-top: 44px; color: #7d94a8; font-size: 15px; }
+  .vs { font-size: 44px; padding-top: 44px; color: #f2c94c; }
+  .turnlabel { text-align: center; font-size: 14px; color: #d6e4f0; margin-top: 2px; }
+  .log { margin: 6px auto 0; max-width: 900px; text-align: center; font-size: 15px; line-height: 1.45; color: #e7eef5; min-height: 66px; }
+  .logline:first-child { color: #f2c94c; font-weight: 700; }
+
+  .energybox { display: flex; align-items: center; gap: 8px; }
+  .energylabel { font-size: 13px; letter-spacing: 2px; font-weight: 800; color: #f2c94c; }
+  .energypips { display: flex; align-items: center; gap: 3px; font-size: 22px; }
+  .pip { color: #334155; }
+  .pip.on { color: #38bdf8; text-shadow: 0 0 8px #38bdf8; }
+  .energyval { font-size: 18px; font-weight: 900; color: #fff; margin-left: 4px; }
+  .endbtn, .startbtn { background: linear-gradient(180deg, #f2c94c, #d4a017); color: #1c1917; border: none; border-radius: 12px; font-size: 19px; font-weight: 900; padding: 12px 20px; cursor: pointer; box-shadow: 0 4px 0 #92400e; }
+  .endbtn:active, .startbtn:active { transform: translateY(3px); box-shadow: 0 1px 0 #92400e; }
+  .endbtn:disabled { opacity: .45; cursor: default; }
+  .mutebtn { background: #102a43; color: #fdf6e3; border: 2px solid #f2c94c; border-radius: 10px; font-size: 20px; padding: 8px 12px; cursor: pointer; }
+
+  .hand { display: flex; justify-content: center; gap: 14px; padding: 8px 12px 12px; min-height: 216px; }
+  .card { position: relative; width: 148px; height: 204px; flex: none; border-radius: 14px; background: linear-gradient(180deg, #fffdf5 0%, #f5eeda 100%); color: #1c1917; border: 4px solid var(--suit); box-shadow: 0 6px 14px rgba(0,0,0,.5); cursor: pointer; transition: transform .16s ease, box-shadow .16s ease; overflow: hidden; }
+  .card:hover { transform: translateY(-14px) scale(1.04); box-shadow: 0 14px 24px rgba(0,0,0,.6); }
+  .card.disabled { filter: grayscale(.55) brightness(.75); cursor: not-allowed; }
+  .card.disabled:hover { transform: none; }
+  .card.small { width: 104px; height: 118px; pointer-events: none; }
+  .card.small .cardart { display: none; }
+  .card.small .suitbadge { padding-top: 5px; }
+  .card.small .suitname { display: none; }
+  .card.small .cost { width: 28px; height: 28px; font-size: 16px; }
+  .card.small .cardname { font-size: 12px; line-height: 1.1; min-height: 27px; }
+  .card.small .valuerow { padding-top: 0; gap: 5px; }
+  .card.small .bigvalue { font-size: 28px; }
+  .card.small .typeglyph { font-size: 18px; }
+  .card.small .typelabel { display: none; }
+  .card.small .keyhint { display: none; }
+  .cost { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; border-radius: 50%; background: #f2c94c; border: 2px solid #92400e; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; z-index: 2; }
+  .suitbadge { display: flex; align-items: center; gap: 5px; padding: 8px 42px 0 10px; font-size: 12px; font-weight: 800; color: var(--suit-dark); white-space: nowrap; }
+  .suitglyph { font-size: 16px; color: var(--suit); }
+  .cardname { padding: 2px 10px; font-size: 15px; font-weight: 800; line-height: 1.15; min-height: 36px; }
+  .cardart { margin: 4px 10px; height: 62px; border-radius: 10px; background: var(--suit); display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .artglyph { font-size: 40px; color: #fff; }
+  .arttype { font-size: 26px; }
+  .valuerow { display: flex; align-items: center; justify-content: center; gap: 8px; padding-top: 4px; padding-right: 26px; }
+  .typeglyph { font-size: 22px; }
+  .bigvalue { font-size: 40px; font-weight: 900; line-height: 1; }
+  .typelabel { font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #57534e; }
+  .combobadge { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); background: #dc2626; color: #fff; font-size: 12px; font-weight: 900; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .keyhint { position: absolute; right: 8px; bottom: 6px; width: 22px; height: 22px; border-radius: 6px; background: #1c1917; color: #f2c94c; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+  .deal-in { animation: dealIn .45s cubic-bezier(.2,1.4,.4,1) both; }
+  @keyframes dealIn { from { transform: translateY(90px) rotate(6deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
+  .card.played { animation: snapIn .3s ease both; }
+  @keyframes snapIn { from { transform: scale(.7) rotate(-4deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+
+  .fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .floatnum { position: absolute; font-size: 44px; font-weight: 900; text-shadow: 0 3px 0 #000; animation: floatUp 1.3s ease-out both; }
+  .floatnum.dmg { color: #ef4444; }
+  .floatnum.heal { color: #22c55e; }
+  .floatnum.block { color: #60a5fa; }
+  @keyframes floatUp { from { transform: translateY(0) scale(1); opacity: 1; } to { transform: translateY(-90px) scale(1.25); opacity: 0; } }
+  .confetti { position: absolute; top: -14px; width: 12px; height: 18px; animation: fall linear both; }
+  @keyframes fall { to { transform: translateY(760px) rotate(720deg); } }
+  .stage.shake { animation: shakeAnim .35s ease; }
+  .stage.shake-big { animation: shakeBig .5s ease; }
+  @keyframes shakeAnim { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-6px,3px); } 50% { transform: translate(5px,-3px); } 75% { transform: translate(-3px,-2px); } }
+  @keyframes shakeBig { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-12px,6px); } 40% { transform: translate(10px,-6px); } 60% { transform: translate(-8px,4px); } 80% { transform: translate(6px,-4px); } }
+
+  .overlay { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(7,22,39,.82); }
+  .overlay.hidden { display: none; }
+  .overlay.win-screen, .overlay.loss-screen { background: rgba(7,22,39,.94); }
+  .win-screen .endbox, .loss-screen .endbox { background: #0b2239; border: 3px solid #f2c94c; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,.7); padding: 34px 56px; }
+  .titlebox, .endbox { text-align: center; max-width: 860px; padding: 26px 34px; }
+  .kicker { font-size: 16px; letter-spacing: 4px; color: #f2c94c; font-weight: 800; }
+  .gametitle { font-size: 74px; font-weight: 900; line-height: .95; color: #fdf6e3; text-shadow: 0 4px 0 #92400e, 0 8px 18px rgba(0,0,0,.7); margin: 10px 0; white-space: pre-line; }
+  .subtitle { font-size: 20px; color: #d6e4f0; margin-bottom: 14px; }
+  .suitrow { display: flex; justify-content: center; gap: 12px; margin-bottom: 14px; }
+  .suitchip { display: flex; align-items: center; gap: 6px; background: #fffdf5; color: #1c1917; border: 3px solid var(--suit); border-radius: 999px; padding: 6px 14px; font-weight: 800; font-size: 15px; }
+  .chipglyph { color: var(--suit); font-size: 20px; }
+  .howto { font-size: 16px; line-height: 1.5; color: #e7eef5; max-width: 700px; margin: 0 auto 18px; }
+  .startbtn { font-size: 26px; padding: 16px 42px; }
+  .bestline { margin-top: 14px; font-size: 17px; color: #f2c94c; font-weight: 800; }
+  .controlsline { margin-top: 8px; font-size: 14px; color: #a8b8c8; }
+  .win-screen .endtitle { font-size: 84px; color: #f2c94c; }
+  .loss-screen .endtitle { font-size: 84px; color: #ef4444; }
+  .endtitle { font-weight: 900; text-shadow: 0 4px 0 #000, 0 8px 18px rgba(0,0,0,.7); line-height: 1; }
+  .endsub { font-size: 28px; margin: 10px 0 16px; }
+  .endscore { font-size: 40px; font-weight: 900; color: #f2c94c; }
+  .endstats { font-size: 16px; color: #d6e4f0; margin: 10px 0 20px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage" class="stage" aria-label="Duel Kartu Nusantara: Perang Rempah"></div>
+</div>
+<p id="status" role="status" aria-live="polite"></p>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
